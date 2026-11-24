@@ -50,3 +50,23 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+
+      - name: Verify native-password login and query the Formula 1 database
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}@${{ steps.build-and-push.outputs.digest }}
+        run: |
+          docker run -d --name f1db -p 127.0.0.1:3346:3306 \
+            -e MYSQL_ROOT_PASSWORD=f1db -e MYSQL_DATABASE=f1db "$IMAGE"
+          for attempt in {1..90}; do
+            if docker exec -e MYSQL_PWD=f1db f1db mysql --protocol=tcp -h 127.0.0.1 -uroot -e 'SELECT 1'; then
+              break
+            fi
+            sleep 2
+          done
+          docker exec -e MYSQL_PWD=f1db f1db mysql -uroot -e \
+            "CREATE USER 'tableau'@'%' IDENTIFIED WITH mysql_native_password BY 'test-only';
+             GRANT SELECT, SHOW VIEW ON f1db.* TO 'tableau'@'%';"
+          result=$(docker run --rm --network host -e MYSQL_PWD=test-only "$IMAGE" \
+            mysql --protocol=tcp -h 127.0.0.1 -P 3346 -utableau --default-auth=mysql_native_password \
+            --batch --skip-column-names -e 'SELECT COUNT(*) > 0 FROM f1db.races;')
+          test "$result" = 1
