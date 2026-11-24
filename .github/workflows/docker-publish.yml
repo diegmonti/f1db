@@ -63,10 +63,8 @@ jobs:
             fi
             sleep 2
           done
-          docker exec -e MYSQL_PWD=f1db f1db mysql -uroot -e \
-            "CREATE USER 'tableau'@'%' IDENTIFIED WITH mysql_native_password BY 'test-only';
-             GRANT SELECT, SHOW VIEW ON f1db.* TO 'tableau'@'%';"
-          result=$(docker run --rm --network host -e MYSQL_PWD=test-only "$IMAGE" \
-            mysql --protocol=tcp -h 127.0.0.1 -P 3346 -utableau --default-auth=mysql_native_password \
-            --batch --skip-column-names -e 'SELECT COUNT(*) > 0 FROM f1db.races;')
-          test "$result" = 1
+          result=$(docker run --rm --network host -e MYSQL_PWD=f1db "$IMAGE" \
+            mysql --protocol=tcp -h 127.0.0.1 -P 3346 -uroot --default-auth=mysql_native_password \
+            --batch --skip-column-names -e "SELECT plugin FROM mysql.user WHERE CONCAT(User,'@',Host)=CURRENT_USER();
+                                            SELECT COUNT(*) > 0 FROM f1db.races;")
+          test "$result" = $'mysql_native_password\n1'
