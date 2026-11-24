@@ -4,6 +4,6 @@ A Docker image containing a MySQL server with the Formula 1 database, as provide
 
 You can start it with:
 
-`docker run --rm -p 3346:3306 -e MYSQL_ROOT_PASSWORD=f1db -e MYSQL_DATABASE=f1db ghcr.io/diegmonti/f1db --default-authentication-plugin=mysql_native_password`
+`docker run --rm -p 3346:3306 -e MYSQL_ROOT_PASSWORD=f1db -e MYSQL_DATABASE=f1db ghcr.io/diegmonti/f1db`
 
 The server will run on `localhost:3346`. The user is `root`, the password is `f1db`, and the database is also `f1db`.
